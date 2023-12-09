@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.colors import LinearSegmentedColormap
+import json
 
 def honesty_function_dataset(data_path: str, tokenizer: PreTrainedTokenizer, user_tag: str = "", assistant_tag: str = "", seed: int = 0) -> (list, list):
     """
@@ -69,6 +70,63 @@ def honesty_function_dataset(data_path: str, tokenizer: PreTrainedTokenizer, use
         'train': {'data': train_data, 'labels': train_labels},
         'test': {'data': test_data, 'labels': [[1,0]] * len(test_data)}
     }
+    
+    
+
+def rotten_tomato_dataset(data_path: str, tokenizer: PreTrainedTokenizer, user_tag: str = "", assistant_tag: str = "", seed: int = 0) -> (list, list):
+    """
+    Processes data to create training and testing datasets based on honesty.
+
+    Args:
+    - data_path (str): Path to the CSV containing the data.
+    - tokenizer (PreTrainedTokenizer): Tokenizer to tokenize statements.
+    - user_tag (str): Instruction template.
+    - assistant_tag (str): Instruction template user tag.
+    - seed (int): Random seed for reproducibility.
+
+    Returns:
+    - Tuple containing train and test data.
+    """
+
+    # Setting the seed for reproducibility
+    random.seed(seed)
+
+    # Load the data
+    data_str = open(data_path, 'r').read()
+    data = [json.loads(line) for line in data_str.strip().split('\n')]
+    df = pd.DataFrame(data)
+
+    template_str = f"{user_tag} Prediction the sentiment of the movie reviews as either positive or negative. {assistant_tag} "
+    ntrain = 1024
+    processed_data = []
+    processed_label = []
+    processed_str = template_str 
+    for i, row in df.iterrows():
+        if i >= ntrain * 3 * 2:
+            break
+        if i % 3 == 0: 
+            processed_str += row['input'] + " Answer: "
+            processed_data.append((processed_str))
+            processed_label.append(1 if row['output'] == "positive" else 0)
+            processed_str = template_str
+            continue
+        processed_str += row['input'] + " Answer: " + row['output'] + ". "
+    
+    train_data = processed_data[:ntrain]
+    train_labels = processed_label[:ntrain]
+    test_data = processed_data[ntrain:ntrain*2]
+    test_labels = processed_label[ntrain:ntrain*2]
+    # train_data = np.concatenate(train_data).tolist()
+    # test_data = np.concatenate(test_data).tolist()
+
+    print(f"Train data: {len(train_data)}")
+    print(f"Test data: {len(test_data)}")
+
+    return {
+        'train': {'data': train_data, 'labels': train_labels},
+        'test': {'data': test_data, 'labels': test_labels}
+    }
+
 
 def plot_detection_results(input_ids, rep_reader_scores_dict, THRESHOLD, start_answer_token=":"):
 
