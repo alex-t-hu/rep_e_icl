@@ -73,7 +73,7 @@ def honesty_function_dataset(data_path: str, tokenizer: PreTrainedTokenizer, use
     
     
 
-def rotten_tomato_dataset(data_path: str, tokenizer: PreTrainedTokenizer, user_tag: str = "", assistant_tag: str = "", seed: int = 0) -> (list, list):
+def rotten_tomato_dataset(data_path: str, tokenizer: PreTrainedTokenizer, positive_prompt: str, negative_prompt: str, user_tag: str = "", assistant_tag: str = "", seed: int = 0, num_examples: int = 2, len_dataset: int = 1024) -> (list, list):
     """
     Processes data to create training and testing datasets based on honesty.
 
@@ -83,9 +83,14 @@ def rotten_tomato_dataset(data_path: str, tokenizer: PreTrainedTokenizer, user_t
     - user_tag (str): Instruction template.
     - assistant_tag (str): Instruction template user tag.
     - seed (int): Random seed for reproducibility.
-
+    - num_examples (int): the number of examples we show the model
+    - len_dataset (int): upper bound on the number of training and test examples used, it's always half training half testing
+    - positive_prompt (str): An instruction template used to stimulate the model to perform in-context learning
+    - negative_prompt (str): An instruction template used to anti-stimulate the model to perform in-context learning
+    
     Returns:
     - Tuple containing train and test data.
+    - The labels are True for the positive prompt and False for the negative
     """
 
     # Setting the seed for reproducibility
@@ -94,28 +99,43 @@ def rotten_tomato_dataset(data_path: str, tokenizer: PreTrainedTokenizer, user_t
     # Load the data
     data_str = open(data_path, 'r').read()
     data = [json.loads(line) for line in data_str.strip().split('\n')]
+    random.shuffle(data)
     df = pd.DataFrame(data)
 
-    template_str = f"{user_tag} Prediction the sentiment of the movie reviews as either positive or negative. {assistant_tag} "
-    ntrain = 1024
+    positive_template_str = f"{user_tag} {positive_prompt} {assistant_tag} "
+    negative_template_str = f"{user_tag} {negative_prompt} {assistant_tag} "
     processed_data = []
     processed_label = []
-    processed_str = template_str 
+    processed_str = "" 
+    len_dataset = min(len_dataset, len(df) // num_examples)
+    len_dataset -= len_dataset%4
+    rand_choice = 0
     for i, row in df.iterrows():
-        if i >= ntrain * 3 * 2:
+        if i==num_examples*len_dataset:
             break
-        if i % 3 == 0: 
-            processed_str += row['input'] + " Answer: "
-            processed_data.append((processed_str))
-            processed_label.append(1 if row['output'] == "positive" else 0)
-            processed_str = template_str
-            continue
-        processed_str += row['input'] + " Answer: " + row['output'] + ". "
+        if i%(2*num_examples) == 0:
+            rand_choice = random.choice([0,1])
+            if rand_choice == 0: 
+                processed_str = positive_template_str
+            else:
+                processed_str = negative_template_str
+        elif i%num_examples == 0:
+            if rand_choice == 0:
+                processed_str = negative_template_str
+            else:
+                processed_str = positive_template_str
+        
+        processed_str += row['input'] + "\n" + row['output'] + "\n"
+
+        if (i+1)%num_examples == 0:
+            processed_data.append(processed_str)
+        if (i+1)%(2*num_examples) == 0:
+            processed_label.append([bool(1-rand_choice), bool(rand_choice)])
     
-    train_data = processed_data[:ntrain]
-    train_labels = processed_label[:ntrain]
-    test_data = processed_data[ntrain:ntrain*2]
-    test_labels = processed_label[ntrain:ntrain*2]
+    train_data = processed_data[:len_dataset//2]
+    train_labels = processed_label[:len_dataset//4]
+    test_data = processed_data[len_dataset//2:]
+    test_labels = processed_label[len_dataset//4:]
     # train_data = np.concatenate(train_data).tolist()
     # test_data = np.concatenate(test_data).tolist()
 
