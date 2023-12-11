@@ -3,6 +3,67 @@ import json
 import random
 import pandas as pd
 
+
+def load_train_dataset_data_aug(data_path: str, tokenizer, positive_prompt: str, negative_prompt: str, user_tag: str = "", assistant_tag: str = "", seed: int = 0, num_examples: int = 2, len_dataset=None, shuffle: bool = False, overall_prompt="", is_test=False) -> (list, list):
+    random.seed(seed)
+
+    # Load the data
+    data_str = open(data_path, 'r').read()
+    data = [json.loads(line) for line in data_str.strip().split('\n')]
+    df = pd.DataFrame(data)
+    options = df.iloc[0]["options"]
+    print(options)
+    if len(options) > 2: 
+        df = df[~df["output"].isin(["no_impact", "neutral", "none"])]
+    if shuffle: 
+        df['input'] = df['input'].sample(frac=1).reset_index(drop=True)
+
+    positive_template_str = f"{overall_prompt}{user_tag} {positive_prompt} {assistant_tag} "
+    negative_template_str = f"{overall_prompt}{user_tag} {negative_prompt} {assistant_tag} "
+    
+    processed_data = [] 
+    processed_str = ""
+    for i, row in df.iterrows(): 
+        if len_dataset and i == num_examples*len_dataset: 
+            break 
+        
+        if i % num_examples == 0: 
+            processed_str = ""
+        processed_str += row['input'] + "\n" + row['output'] + "\n"
+        if (i+1) % num_examples == 0: 
+            processed_data.append(processed_str)
+        
+        
+    
+    combined_data = []
+    
+    for data in processed_data: 
+        tokens = tokenizer.tokenize(data)
+        if len(tokens) < 10: 
+            combined_data.append(
+                [positive_template_str+ data, negative_template_str + data]
+            )
+        else: 
+            for idx in range(10, len(tokens)):
+                truncated_tokens = tokens[:idx]
+                truncated_statement = tokenizer.convert_tokens_to_string(truncated_tokens)
+                combined_data.append(
+                    [positive_template_str+ truncated_statement, negative_template_str + truncated_statement]
+                )
+            
+    ntrain = 16 * len_dataset
+    train_data= combined_data[:ntrain]
+    train_labels = []
+    for d in train_data:
+        true_s = d[0]
+        random.shuffle(d)
+        train_labels.append([s == true_s for s in d])
+        
+    train_data = np.concatenate(train_data).tolist()
+    print(f"data len: {len(train_data)}")
+
+    return  {'data': train_data, 'labels': train_labels}
+
 def load_dataset(data_path: str, positive_prompt: str, negative_prompt: str, user_tag: str = "", assistant_tag: str = "", seed: int = 0, num_examples: int = 2, len_dataset=None, shuffle: bool = False, overall_prompt="", is_test=False) -> (list, list):
     """
     Processes data to create training and testing datasets based on honesty.
@@ -147,7 +208,7 @@ def load_test_dataset(data_path: str, user_tag: str = "", assistant_tag: str = "
     return {'data': processed_data, "labels": labels}
 
 
-def get_task_dataset(dataset_name, positive_prompt, negative_prompt, user_tag="[INST]", assistant_tag="[/INST]", ntrain=64, test_num_examples=2): 
+def get_task_dataset(dataset_name, tokenizer, positive_prompt, negative_prompt, user_tag="[INST]", assistant_tag="[/INST]", ntrain=64, test_num_examples=2): 
     print(f"getting dataset for {dataset_name}")
     if ntrain <= 64: 
         train_data_path = f"data/{dataset_name}/{dataset_name}_64_100_train.jsonl"
@@ -155,7 +216,7 @@ def get_task_dataset(dataset_name, positive_prompt, negative_prompt, user_tag="[
         train_data_path = f"data/{dataset_name}/{dataset_name}_16384_100_train.jsonl"
     dev_data_path = f"data/{dataset_name}/{dataset_name}_64_100_dev.jsonl"
     test_data_path = f"data/{dataset_name}/{dataset_name}_64_100_test.jsonl"
-    train_data = load_dataset(train_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
+    train_data = load_dataset(train_data_path, tokenizer, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
     dev_data = load_dataset(dev_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag)
     test_data = load_test_dataset(test_data_path, user_tag, assistant_tag, num_examples=test_num_examples)
     return {

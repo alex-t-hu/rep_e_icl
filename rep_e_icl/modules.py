@@ -33,7 +33,7 @@ def get_rep_reader(
         direction_finder_kwargs=direction_finder_kwargs,
         batch_size=batch_size,
         max_length=max_length,
-        # padding="longest",
+        padding="longest",
     )
 
     return rep_reader 
@@ -70,9 +70,7 @@ def plot_correlation(rep_reader, H_tests, hidden_layers):
     plt.show()
     
     
-def get_rep_control(model, tokenizer, block_name="decoder_block", control_method="reading_vec"): 
-    layer_id = list(range(-5, -18, -1))
-
+def get_rep_control(model, tokenizer, layer_id, block_name="decoder_block", control_method="reading_vec"): 
     block_name="decoder_block"
     control_method="reading_vec"
 
@@ -120,6 +118,8 @@ def get_acc_dict(baseline, pos_results, neg_results, ground_truth):
             baseline_accs +=1 
         if p.find(g) != -1: 
             pos_accs+=1 
+        else: 
+            print(p)
         if n.find(g) != -1: 
             neg_accs+= 1 
     return {
