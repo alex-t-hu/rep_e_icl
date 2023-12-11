@@ -23,6 +23,7 @@ class RepReadingPipeline(Pipeline):
         for layer in hidden_layers:
             hidden_states = outputs['hidden_states'][layer]
             hidden_states =  hidden_states[:, rep_token, :]
+            assert (not torch.isnan(hidden_states).any())
             # hidden_states_layers[layer] = hidden_states.cpu().to(dtype=torch.float32).detach().numpy()
             hidden_states_layers[layer] = hidden_states.detach()
 
@@ -88,12 +89,16 @@ class RepReadingPipeline(Pipeline):
 
     def _batched_string_to_hiddens(self, train_inputs, rep_token, hidden_layers, batch_size, which_hidden_states, **tokenizer_args):
         # Wrapper method to get a dictionary hidden states from a list of strings
+        print(train_inputs)
         hidden_states_outputs = self(train_inputs, rep_token=rep_token,
             hidden_layers=hidden_layers, batch_size=batch_size, rep_reader=None, which_hidden_states=which_hidden_states, **tokenizer_args)
+        
+        # assert (not torch.isnan(torch.Tensor(hidden_states_outputs)).any())
         hidden_states = {layer: [] for layer in hidden_layers}
         for hidden_states_batch in hidden_states_outputs:
             for layer in hidden_states_batch:
                 hidden_states[layer].extend(hidden_states_batch[layer])
+        
         return {k: np.vstack(v) for k, v in hidden_states.items()}
     
     def _validate_params(self, n_difference, direction_method):
@@ -141,7 +146,8 @@ class RepReadingPipeline(Pipeline):
             for layer in hidden_layers:
                 for _ in range(n_difference):
                     relative_hidden_states[layer] = relative_hidden_states[layer][::2] - relative_hidden_states[layer][1::2]
-
+                    
+        
 		# get the directions
         direction_finder.directions = direction_finder.get_rep_directions(
             self.model, self.tokenizer, relative_hidden_states, hidden_layers,
