@@ -126,15 +126,8 @@ def load_dataset(data_path: str, positive_prompt: str, negative_prompt: str, use
                 processed_str = negative_template_str
             else:
                 processed_str = positive_template_str
-        
-        if is_test: 
-            if (i+1)%num_examples != 0: 
-                processed_str += row['input'] + "\n" + row['output'] + "\n"
-            else: 
-                processed_str += row['input'] + "\n"
-                ground_truth.append(row['output'])
-        else: 
-            processed_str += row['input'] + "\n" + row['output'] + "\n"
+                
+        processed_str += row['input'] + "\n" + row['output'] + "\n"
 
         if (i+1)%num_examples == 0:
             processed_data.append(processed_str)
@@ -170,7 +163,7 @@ def load_test_dataset(data_path: str, user_tag: str = "", assistant_tag: str = "
 
     # Setting the seed for reproducibility
     random.seed(seed)
-    template_str = f"{overall_prompt}{user_tag} {assistant_tag} "
+    template_str = f"{overall_prompt}"
     # Load the data
     data_str = open(data_path, 'r').read()
     data = [json.loads(line) for line in data_str.strip().split('\n')]
@@ -196,13 +189,13 @@ def load_test_dataset(data_path: str, user_tag: str = "", assistant_tag: str = "
             processed_str = template_str
         
         if (i+1)%num_examples != 0: 
-            processed_str += row['input'] + "\n" + row['output'] + "\n"
+            processed_str += f"{user_tag} {row['input']} {assistant_tag}" + "\n" + row['output'] + "\n"
         else: 
-            processed_str += row['input'] + "\n"
+            processed_str += f"{user_tag} {row['input']} {assistant_tag}" + "\n"
             labels.append(row['output'])
 
         if (i+1)%num_examples == 0:
-            processed_data.append(processed_str)
+            processed_data.append(f"{processed_str}")
 
     print(f"data len: {len(processed_data)}")
     return {'data': processed_data, "labels": labels}
@@ -216,9 +209,10 @@ def get_task_dataset(dataset_name, tokenizer, positive_prompt, negative_prompt, 
         train_data_path = f"data/{dataset_name}/{dataset_name}_16384_100_train.jsonl"
     dev_data_path = f"data/{dataset_name}/{dataset_name}_64_100_dev.jsonl"
     test_data_path = f"data/{dataset_name}/{dataset_name}_64_100_test.jsonl"
-    train_data = load_dataset(train_data_path, tokenizer, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
+    train_data = load_dataset(train_data_path, positive_prompt, negative_prompt, user_tag=user_tag, assistant_tag=assistant_tag, len_dataset=ntrain)
     dev_data = load_dataset(dev_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag)
     test_data = load_test_dataset(test_data_path, user_tag, assistant_tag, num_examples=test_num_examples)
+    # no_icl_baseline = load_baseline_dataset(test_data_path, user_tag, assistant_tag, num_examples=test_num_examples)
     return {
         "train": train_data, 
         "val": dev_data, 

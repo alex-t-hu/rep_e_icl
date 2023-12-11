@@ -1,7 +1,7 @@
 from datasets import load_dataset
 import random
 import numpy as np
-from .utils import shuffle_all_train_choices
+# from .utils import shuffle_all_train_choices
 
 def csqa_dataset(ntrain=7, seed=5):
     random.seed(seed)
@@ -49,7 +49,7 @@ def csqa_dataset(ntrain=7, seed=5):
     val_data, val_labels = samples(val_df)
 
     train_data, train_labels =  train_data[:ntrain], train_labels[:ntrain]
-    train_data, train_labels = shuffle_all_train_choices(train_data, train_labels, seed)
+    # train_data, train_labels = shuffle_all_train_choices(train_data, train_labels, seed)
 
     train_data =  np.concatenate(train_data).tolist()
     test_data =  np.concatenate(test_data).tolist()
@@ -60,3 +60,7 @@ def csqa_dataset(ntrain=7, seed=5):
         "test": {"data": test_data, "labels": test_labels}, 
         "val": {"data": val_data, "labels": val_labels}
         }
+    
+if __name__ == "__main__": 
+    dataset = csqa_dataset()
+    print(dataset)

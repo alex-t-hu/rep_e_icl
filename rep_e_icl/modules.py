@@ -43,12 +43,17 @@ def get_hidden_layers(model):
 
 def get_h_test(model, rep_pipeline, rep_reader, dataset, rep_token = -1, batch_size=32): 
     hidden_layers = get_hidden_layers(model)
+    # for i in range(len(dataset['test']['data'])):  
+    # try: 
     return rep_pipeline(
-        dataset['test']['data'], 
-        rep_token=rep_token, 
-        hidden_layers=hidden_layers, 
-        rep_reader=rep_reader,
-        batch_size=batch_size)
+    dataset['test']['data'], 
+    rep_token=rep_token, 
+    hidden_layers=hidden_layers, 
+    rep_reader=rep_reader,
+    batch_size=batch_size, 
+    padding=True)
+    # except Exception: 
+    #         print(i, dataset['test']['data'][i:i+1])
 
 def plot_correlation(rep_reader, H_tests, hidden_layers): 
     results = {layer: {} for layer in hidden_layers}
