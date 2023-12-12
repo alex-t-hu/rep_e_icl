@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tasks import get_task_dataset
-from tasks_n_prompts import DATASET_NAMES
+from tasks_n_prompts import DATASET_NAMES, TASKS_TO_PROMPTS
 
 if __name__ == "__main__": 
     positive_prompt = "Pay attention to the following examples."

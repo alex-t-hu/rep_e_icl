@@ -23,10 +23,3 @@ DATASET_NAMES = [
 "tweet_eval-offensive"
 ]
 
-
-TASKS_TO_PROMPTS = { 
-                   
-"ade_corpus_v2-classification": "Answer whether the drug and the adverse effect are related. ",
-"rotten_tomatoes" : "Predict the sentiment of the following movie review. "
-                   
-}
