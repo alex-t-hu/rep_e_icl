@@ -147,7 +147,6 @@ class RepReadingPipeline(Pipeline):
                 for _ in range(n_difference):
                     relative_hidden_states[layer] = relative_hidden_states[layer][::2] - relative_hidden_states[layer][1::2]
                     
-        
 		# get the directions
         direction_finder.directions = direction_finder.get_rep_directions(
             self.model, self.tokenizer, relative_hidden_states, hidden_layers,

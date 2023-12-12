@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
+import pdb
 def get_rep_reader(
         model, 
         rep_pipeline,
@@ -22,7 +23,7 @@ def get_rep_reader(
 ):
     hidden_layers = list(range(-1, -model.config.num_hidden_layers, -1))
     direction_finder_kwargs= {"n_components": n_components}
-
+    # pdb.set_trace()
     rep_reader = rep_pipeline.get_directions(
         dataset['train']['data'], 
         rep_token=rep_token, 

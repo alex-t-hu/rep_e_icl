@@ -94,7 +94,7 @@ def load_dataset(data_path: str, positive_prompt: str, negative_prompt: str, use
     options = df.iloc[0]["options"]
     print(options)
     if len(options) > 2: 
-        df = df[~df["output"].isin(["no_impact", "neutral", "none"])]
+        df = df[~df["output"].isin(["no_impact", "neutral", "none"])].reset_index(drop=True)
     if shuffle: 
         df['input'] = df['input'].sample(frac=1).reset_index(drop=True)
 
@@ -109,10 +109,9 @@ def load_dataset(data_path: str, positive_prompt: str, negative_prompt: str, use
         len_dataset = min(len_dataset, len(df) // num_examples)
     else: 
         len_dataset = len(df) // num_examples
-    len_dataset -= len_dataset%2
+    len_dataset -= len_dataset%2 # enforce additional constraint so that differences in the dataset swork
     rand_choice = 0
     for i, row in df.iterrows():
-            
         if len_dataset and i==num_examples*len_dataset:
             break
         if i%(2*num_examples) == 0:
@@ -140,7 +139,6 @@ def load_dataset(data_path: str, positive_prompt: str, negative_prompt: str, use
             processed_data.append(processed_str)
         if (i+1)%(2*num_examples) == 0:
             processed_label.append([bool(1-rand_choice), bool(rand_choice)])
-
     print(f"data len: {len(processed_data)}")
 
     return  {'data': processed_data, 'labels': processed_label}
@@ -178,7 +176,7 @@ def load_test_dataset(data_path: str, user_tag: str = "", assistant_tag: str = "
     options = df.iloc[0]["options"]
     print(options)
     if len(options) > 2: 
-        df = df[~df["output"].isin(["no_impact", "neutral", "none"])]
+        df = df[~df["output"].isin(["no_impact", "neutral", "none"])].reset_index(drop=True)
     if shuffle: 
         df['input'] = df['input'].sample(frac=1).reset_index(drop=True)
     
@@ -214,14 +212,14 @@ def get_task_dataset(dataset_name, tokenizer, positive_prompt, negative_prompt, 
         train_data_path = base_path+f"data/{dataset_name}/{dataset_name}_64_100_train.jsonl"
     else: 
         train_data_path = base_path+f"data/{dataset_name}/{dataset_name}_16384_100_train.jsonl"
-    dev_data_path = base_path+ f"data/{dataset_name}/{dataset_name}_64_100_dev.jsonl"
+    # dev_data_path = base_path+ f"data/{dataset_name}/{dataset_name}_64_100_dev.jsonl"
     test_data_path = base_path+f"data/{dataset_name}/{dataset_name}_64_100_test.jsonl"
     train_data = load_dataset(train_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
-    dev_data = load_dataset(dev_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag)
+    # dev_data = load_dataset(dev_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag)
     test_data = load_test_dataset(test_data_path, user_tag, assistant_tag, num_examples=test_num_examples)
     return {
         "train": train_data, 
-        "val": dev_data, 
+        # "val": dev_data, 
         "test": test_data
     }
 
