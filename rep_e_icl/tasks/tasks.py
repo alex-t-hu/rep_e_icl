@@ -216,7 +216,7 @@ def get_task_dataset(dataset_name, tokenizer, positive_prompt, negative_prompt, 
     test_data_path = base_path+f"data/{dataset_name}/{dataset_name}_64_100_test.jsonl"
     train_data = load_dataset(train_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
     # dev_data = load_dataset(dev_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag)
-    test_data = load_test_dataset(test_data_path, user_tag, assistant_tag, num_examples=test_num_examples)
+    test_data = load_test_dataset(test_data_path, user_tag, assistant_tag, len_dataset=ntrain, num_examples=test_num_examples)
     return {
         "train": train_data, 
         # "val": dev_data, 

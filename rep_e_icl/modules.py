@@ -81,7 +81,44 @@ def get_rep_control(model, tokenizer, layer_id, block_name="decoder_block", cont
         tokenizer=tokenizer, 
         layers=layer_id, 
         control_method=control_method)
+
+def get_rep_controlled_results_baseline(rep_reader,rep_control_pipeline, inputs, layer_id, coeff=2.0, max_new_tokens=3, device="cuda"):
+
+    baseline_outputs = rep_control_pipeline(inputs, batch_size=4, max_new_tokens=max_new_tokens, do_sample=False)
+    print("Done with baseline results!")
+
+    baseline_next_toks = [] 
+
+    for i, (input, b) in enumerate(zip(inputs, baseline_outputs)): 
+        baseline_next_toks.append(b[0]['generated_text'].replace(input, "").strip(' \n\t'))
+
+        
+
+    return baseline_next_toks
     
+def get_rep_controlled_results_nobaseline(rep_reader,rep_control_pipeline, inputs, layer_id, coeff=2.0, max_new_tokens=3, device="cuda"): 
+
+    activations = {}
+    for layer in layer_id:
+        activations[layer] = torch.tensor(coeff * rep_reader.directions[layer] * rep_reader.direction_signs[layer]).to(device).half()
+    neg_activations = {} 
+    for layer in layer_id:
+        neg_activations[layer] = torch.tensor(-coeff * rep_reader.directions[layer] * rep_reader.direction_signs[layer]).to(device).half()
+
+    control_outputs = rep_control_pipeline(inputs, activations=activations, batch_size=4, max_new_tokens=max_new_tokens, do_sample=False, repetition_penalty=1.1)
+    print("Done with control outputs!")
+    neg_control_outputs = rep_control_pipeline(inputs, activations=neg_activations, batch_size=4, max_new_tokens=max_new_tokens, do_sample=False, repetition_penalty=1.1)
+    print("Done with neg control outputs")
+
+    baseline_next_toks = [] 
+    control_next_toks = []
+    neg_control_next_toks = [] 
+    for i, (input, c, n) in enumerate(zip(inputs, control_outputs, neg_control_outputs)): 
+        control_next_toks.append(c[0]['generated_text'].replace(input, "").strip(' \n\t'))
+        neg_control_next_toks.append(n[0]['generated_text'].replace(input, "").strip(' \n\t'))
+        
+
+    return control_next_toks, neg_control_next_toks
 
 def get_rep_controlled_results(rep_reader,rep_control_pipeline, inputs, layer_id, coeff=2.0, max_new_tokens=3, device="cuda"): 
 
