@@ -208,19 +208,47 @@ def load_test_dataset(data_path: str, user_tag: str = "", assistant_tag: str = "
     return {'data': processed_data, "labels": labels}
 
 
-def get_task_dataset(dataset_name, tokenizer, positive_prompt, negative_prompt, user_tag="[INST]", assistant_tag="[/INST]", ntrain=64, test_num_examples=2): 
+def get_task_dataset(dataset_name, tokenizer, positive_prompt, negative_prompt, user_tag="[INST]", assistant_tag="[/INST]", ntrain=64, test_num_examples=2, base_path=''): 
     print(f"getting dataset for {dataset_name}")
     if ntrain <= 64: 
-        train_data_path = f"data/{dataset_name}/{dataset_name}_64_100_train.jsonl"
+        train_data_path = base_path+f"data/{dataset_name}/{dataset_name}_64_100_train.jsonl"
     else: 
-        train_data_path = f"data/{dataset_name}/{dataset_name}_16384_100_train.jsonl"
-    dev_data_path = f"data/{dataset_name}/{dataset_name}_64_100_dev.jsonl"
-    test_data_path = f"data/{dataset_name}/{dataset_name}_64_100_test.jsonl"
-    train_data = load_dataset(train_data_path, tokenizer, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
+        train_data_path = base_path+f"data/{dataset_name}/{dataset_name}_16384_100_train.jsonl"
+    dev_data_path = base_path+ f"data/{dataset_name}/{dataset_name}_64_100_dev.jsonl"
+    test_data_path = base_path+f"data/{dataset_name}/{dataset_name}_64_100_test.jsonl"
+    train_data = load_dataset(train_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag, len_dataset=ntrain)
     dev_data = load_dataset(dev_data_path, positive_prompt, negative_prompt, user_tag, assistant_tag)
     test_data = load_test_dataset(test_data_path, user_tag, assistant_tag, num_examples=test_num_examples)
     return {
         "train": train_data, 
         "val": dev_data, 
         "test": test_data
+    }
+
+def concatenate_dataset(datasets):
+    train_data = []
+    for d in datasets: 
+        train_data.extend(d["train"]["data"])
+    train_labels = []
+    for d in datasets: 
+        train_labels.extend(d["train"]["labels"])
+
+    val_data = []
+    for d in datasets:
+        val_data.extend(d["val"]["data"])
+    val_labels = []
+    for d in datasets:
+        val_labels.extend(d["val"]["labels"])
+    
+    test_data = []
+    for d in datasets:
+        test_data.extend(d["test"]["data"])
+    test_labels = []
+    for d in datasets:
+        test_labels.extend(d["test"]["labels"])
+        
+    return {
+        "train": {"data": [d["train"]["data"] for d in datasets], "labels": [d["train"]["labels"] for d in datasets]},
+        "val": {"data": [d["val"]["data"] for d in datasets], "labels": [d["val"]["labels"] for d in datasets]},
+        "test": {"data": [d["test"]["data"] for d in datasets], "labels": [d["test"]["labels"] for d in datasets]}
     }

@@ -284,7 +284,8 @@ def plot_detection_results(input_ids, rep_reader_scores_dict, THRESHOLD, start_a
 def plot_lat_scans(input_ids, rep_reader_scores_dict, layer_slice):
     for rep, scores in rep_reader_scores_dict.items():
 
-        start_tok = input_ids.index('▁I')
+        # start_tok = input_ids.index('▁I')
+        start_tok = input_ids.index(']')+1
         print(start_tok, np.array(scores).shape)
         standardized_scores = np.array(scores)[start_tok:start_tok+40,layer_slice]
         # print(standardized_scores.shape)
